@@ -21,22 +21,10 @@ client.login(token)
 
 let validNotes = ["A","B","C", "D", "E", "F", "G"]
 let accidentals = ["b", "#"];
-validNotes = validNotes.concat(validNotes.map(note => accidentals.map(accidental => note + accidental))).flat()
-validNotes = validNotes.concat(validNotes.map(note => note.toLowerCase()))
 
 let notes = [
 	"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
 ];
-let convertNotes = {
-	"Cb": "B",
-	"Db": "C#",
-	"Eb": "D#",
-	"E#": "F",
-	"Fb": "E",
-	"Gb": "F#",
-	"Ab": "G#",
-	"Bb": "A#"
-}
 
 function pitchClassSet(message, args) {
 	if(args.length === 0) {
@@ -128,7 +116,12 @@ function calculateNormalOrder(inputNotes) {
 }
 
 function isValidNote(note) {
-	return validNotes.includes(note);
+	firstCharValid = validNotes.includes(note.charAt(0).toUpperCase());
+	restOfChar = note.slice(1);
+
+	let restOfCharValid = /^[#b]*$/.test(restOfChar);
+
+	return firstCharValid && restOfCharValid;
 }
 
 function removeDuplicates(notes) {
@@ -137,12 +130,31 @@ function removeDuplicates(notes) {
 
 function convertFlatsToSharps(inputNotes) {
 	return inputNotes.map(note => {
-		let newNote = note.charAt(0).toUpperCase() + note.slice(1);
-
-		if(!notes.includes(newNote)) {
-			newNote = convertNotes[newNote];
+		if(note.length === 1) {
+			return note.toUpperCase();
 		}
-		return newNote;
+		
+		let noteName = note.charAt(0).toUpperCase();
+		let rest = note.slice(1).split('');
+
+		let sum = rest.map(a => {
+			if(a === "b") {
+				return -1;
+			}
+			else if(a === "#") {
+				return 1;
+			}
+		}).reduce((a,b)=>a+b)
+
+		let newNote = notes.indexOf(noteName)+sum
+		if(newNote < 0) {
+			newNote += 12;
+		}
+		if(newNote > 12) {
+			newNote -= 12;
+		}
+		
+		return notes[newNote];
 	})
 }
 
