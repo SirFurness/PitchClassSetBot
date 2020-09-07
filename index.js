@@ -34,7 +34,7 @@ function pitchClassSet(message, args) {
 		message.reply("Invalid note given!")	
 	}
 	else {
-		let inputNotes = convertFlatsToSharps(args);
+		let inputNotes = removeExtraAccidentals(args);
 		inputNotes = removeDuplicates(inputNotes)
 		sortNotes(inputNotes)	
 		inputNotes.push(inputNotes[0])
@@ -128,7 +128,7 @@ function removeDuplicates(notes) {
 	return [...new Set(notes)]
 }
 
-function convertFlatsToSharps(inputNotes) {
+function removeExtraAccidentals(inputNotes) {
 	return inputNotes.map(note => {
 		if(note.length === 1) {
 			return note.toUpperCase();
