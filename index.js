@@ -91,12 +91,18 @@ function evaluateArgs(message, args) {
 			}
 			else if(arg.charAt(0) === "(") {
 				let endIndex = i;
+				let foundCloseParenthesis = false;
 				for(let j = i; j < args.length; j++) {
 					if(args[j].charAt(args[j].length-1) === ")") {
 						endIndex = j;	
+						foundCloseParenthesis = true;
 						break;
 					}
 				}	
+
+				if(!foundCloseParenthesis) {
+					throw new UserException("Missing closing parenthesis!")
+				}
 
 				args[i] = args[i].slice(1);
 				args[endIndex] = args[endIndex].slice(0, args[endIndex].length-1);
