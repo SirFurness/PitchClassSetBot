@@ -1,168 +1,118 @@
 const {prefix, token} = require('./config.json')
+const fs = require('fs');
 const Discord = require('discord.js')
 const client = new Discord.Client();
+const noteUtils = require("./notes.js");
+
+client.commands = new Discord.Collection();
+const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+for (const file of commandFiles) {
+	const command = require(`./commands/${file}`);
+
+	client.commands.set(command.name, command);
+}
+
 
 client.once('ready', () => {
 	console.log('Ready!');
 })
 
 client.on('message', message => {
-	if(!message.content.startsWith(prefix) || message.author.bot) return;
-
-	const args = message.content.slice(prefix.length).trim().split(/ +/);
-	const command = args.shift().toLowerCase();
-
-	if(command === "pcs") {
-		pitchClassSet(message, args);
-	}
-})
-
-client.login(token)
-
-let validNotes = ["A","B","C", "D", "E", "F", "G"]
-let accidentals = ["b", "#"];
-
-let notes = [
-	"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
-];
-
-function pitchClassSet(message, args) {
-	if(args.length === 0) {
-		message.reply("Need to give me notes! e.g. \`!pcs Ab C D#\`");
-	}
-	else if(!args.every(isValidNote)) {
-		message.reply("Invalid note given!")	
-	}
-	else {
-		let inputNotes = removeExtraAccidentals(args);
-		inputNotes = removeDuplicates(inputNotes)
-		sortNotes(inputNotes)	
-		inputNotes.push(inputNotes[0])
-
-		normalOrder = calculateNormalOrder(inputNotes);
-		reverseOrder = calculateReverseOrder(normalOrder);
-		
-		noSum = normalOrder.reduce((a,b)=>a+b)
-		roSum = reverseOrder.reduce((a,b)=>a+b)
-
-		if(noSum < roSum) {
-			message.reply(displayBNO(normalOrder));
-		}
+	try {
+		let reply = handleMessage(message);
+		if(reply[0] !== "") {
+			message.reply(reply[0]);	
+		}	
+	} catch(e) {
+		if(e.name === "UserException") {
+			message.reply(e.message);
+		}	
 		else {
-			message.reply(displayBNO(reverseOrder));
+			console.log(e);
 		}
 	}
+});
+
+function UserException(message) {
+	this.message = message;
+	this.name = "UserException";
 }
 
-function displayBNO(bno) {
-	text = "BNO: ["
-	for(let i = 0; i < bno.length-1; i++) {
-		text += bno[i] + " ";
-	}
-	text += bno[bno.length-1] + "]"
+function handleMessage(message) {
+	if(!message.content.startsWith(prefix) || message.author.bot) return ["", message.content];
 
-	return text;
-}
+	let args = message.content.slice(prefix.length).trim().split(/ +/);
+	const commandName = args.shift().toLowerCase();
 
-function calculateReverseOrder(normalOrder) {
-	let ro = [0];
-	for(let i = normalOrder.length-1; i > 0; i--) {
-		let interval = normalOrder[i]-normalOrder[i-1];
+	const command = client.commands.get(commandName)
+		|| client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
 
-		prev = ro[ro.length-1];
+	if(!command) return;
+	
+	args = evaluateArgs(message, args);
 
-		ro.push(prev+interval);
-	}
+	if(command.args && args.length === 0) {
+		let reply = "Need to give me notes!";
 
-	return ro;
-}
-
-function sortNotes(inputNotes) {
-	let referenceNote = inputNotes[0]
-	let distance = (note) => intervalBetween(referenceNote, note)
-	inputNotes.sort((a, b) => {
-		return distance(a) - distance(b)
-	});	
-}
-
-function calculateNormalOrder(inputNotes) {
-	let intervals = [];
-	let largest = 0;
-	let indexOfLargest = 0;
-	for(let i = 0; i < inputNotes.length-1; i++) {
-		let interval = intervalBetween(inputNotes[i], inputNotes[i+1])
-		intervals.push(interval)
-
-		if(interval > largest) {
-			largest = interval;
-			indexOfLargest = i;
+		if(command.usage) {
+			reply += `\nUsage: \`${prefix}${command.name} ${command.usage}\`` 
 		}
-	}
-
-	let no = [0];
-	for(let i = 1; i < intervals.length; i++) {
-		let currentIndex = indexOfLargest + i;
-		if(currentIndex > intervals.length-1) {
-			currentIndex -= intervals.length;
+		if(command.example) {
+			reply += `\nExample: \`${prefix}${command.name} ${command.example}\``
 		}
 
-		let currentInterval = intervals[currentIndex];
-		let previous = no[i-1];
-
-		no.push(previous + currentInterval)
+		throw new UserException(reply)
+	}
+	if(command.validNotes && !args.every(noteUtils.isValidNote)) {
+		throw new UserException("Invalid note given!");
 	}
 	
-	return no;
+	try {
+		return command.execute(message, args);
+	} catch(error) {
+		console.error(error);
+		throw new UserException("An error occurred while executing that command.");
+	}
 }
 
-function isValidNote(note) {
-	firstCharValid = validNotes.includes(note.charAt(0).toUpperCase());
-	restOfChar = note.slice(1);
-
-	let restOfCharValid = /^[#b]*$/.test(restOfChar);
-
-	return firstCharValid && restOfCharValid;
-}
-
-function removeDuplicates(notes) {
-	return [...new Set(notes)]
-}
-
-function removeExtraAccidentals(inputNotes) {
-	return inputNotes.map(note => {
-		if(note.length === 1) {
-			return note.toUpperCase();
-		}
-		
-		let noteName = note.charAt(0).toUpperCase();
-		let rest = note.slice(1).split('');
-
-		let sum = rest.map(a => {
-			if(a === "b") {
-				return -1;
+function evaluateArgs(message, args) {
+	if(args.every(arg => arg === "")) return [];
+	
+	let text = "";
+	for(let i = 0; i < args.length; i++) {
+		let arg = args[i];
+		if(arg.includes("!")) {
+			if(arg.charAt(0) === "!") {
+				let newContent = args.slice(i).join(" ");
+				message.content = newContent;
+				response = handleMessage(message);
+				text += " " + response[1];
+				break;
 			}
-			else if(a === "#") {
-				return 1;
+			else if(arg.charAt(0) === "(") {
+				let endIndex = i;
+				for(let j = i; j < args.length; j++) {
+					if(args[j].charAt(args[j].length-1) === ")") {
+						endIndex = j;	
+						break;
+					}
+				}	
+
+				args[i] = args[i].slice(1);
+				args[endIndex] = args[endIndex].slice(0, args[endIndex].length-1);
+
+				let newContent = args.slice(i, endIndex+1).join(" ");
+				message.content = newContent;
+				response = handleMessage(message);
+				text += " " + response[1];
+				i = endIndex;
 			}
-		}).reduce((a,b)=>a+b)
-
-		let newNote = notes.indexOf(noteName)+sum
-		if(newNote < 0) {
-			newNote += 12;
 		}
-		if(newNote > 12) {
-			newNote -= 12;
+		else {
+			text += " " + arg;
 		}
-		
-		return notes[newNote];
-	})
+	}
+	return text.trim().split(/ +/);
 }
 
-function intervalBetween(a, b) {
-	let interval = notes.indexOf(b)-notes.indexOf(a);
-	if(interval < 0) {
-		interval = 12+interval;
-	}	
-	return interval;
-}
-
+client.login(token)
