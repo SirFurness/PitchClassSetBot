@@ -1,22 +1,40 @@
 const noteUtils = require("../notes.js");
+const Note = require("../note.js");
+
+//https://stackoverflow.com/questions/1985260/rotate-the-elements-in-an-array-in-javascript
+Array.prototype.rotate = (function() {
+    var push = Array.prototype.push,
+        splice = Array.prototype.splice;
+    return function(count) {
+        var len = this.length >>> 0,
+            count = count >> 0;
+        count = ((count % len) + len) % len;
+        push.apply(this, splice.call(this, 0, count));
+        return this;
+    };
+})();
 
 function pitchClassSet(message, args) {
-	let inputNotes = noteUtils.standardizeNotes(args);
+	let inputNotes = args.map(name => new Note(name));
 	inputNotes = noteUtils.removeDuplicates(inputNotes)
-	sortNotes(inputNotes)	
+	sortNotes(inputNotes)
 	inputNotes.push(inputNotes[0])
 
-	normalOrder = calculateNormalOrder(inputNotes);
-	reverseOrder = calculateReverseOrder(normalOrder);
+	let normalOrder = calculateNormalOrder(inputNotes);
+	let retrogradeOrder = calculateRetrogradeOrder(normalOrder);
 	
-	noSum = normalOrder.reduce((a,b)=>a+b)
-	roSum = reverseOrder.reduce((a,b)=>a+b)
+	let noSum = normalOrder.reduce((a,b)=>a+b)
+	let roSum = retrogradeOrder.reduce((a,b)=>a+b)
 
+	let bno = noSum < roSum ? normalOrder : retrogradeOrder;
+	let notes = bno.map(num => new Note(num));	
+	notes.map(note => note.shift(inputNotes[0].number))
+	
 	if(noSum < roSum) {
-		return [displayBNO(normalOrder), normalOrder.join(" ")];
+		return [displayBNO(normalOrder), notes];
 	}
 	else {
-		return [displayBNO(reverseOrder), reverseOrder.join(" ")];
+		return [displayBNO(retrogradeOrder), notes];
 	}
 }
 
@@ -30,7 +48,7 @@ function displayBNO(bno) {
 	return text;
 }
 
-function calculateReverseOrder(normalOrder) {
+function calculateRetrogradeOrder(normalOrder) {
 	let ro = [0];
 	for(let i = normalOrder.length-1; i > 0; i--) {
 		let interval = normalOrder[i]-normalOrder[i-1];
@@ -45,18 +63,19 @@ function calculateReverseOrder(normalOrder) {
 
 function sortNotes(inputNotes) {
 	let referenceNote = inputNotes[0]
-	let distance = (note) => noteUtils.intervalBetween(referenceNote, note)
+	let distance = (note) => noteUtils.intervalBetween(referenceNote.standardName, note.standardName)
 	inputNotes.sort((a, b) => {
 		return distance(a) - distance(b)
 	});	
 }
 
 function calculateNormalOrder(inputNotes) {
+	let notes = inputNotes.map(note => note.standardName);
 	let intervals = [];
 	let largest = 0;
 	let indexOfLargest = 0;
 	for(let i = 0; i < inputNotes.length-1; i++) {
-		let interval = noteUtils.intervalBetween(inputNotes[i], inputNotes[i+1])
+		let interval = noteUtils.intervalBetween(notes[i], notes[i+1])
 		intervals.push(interval)
 
 		if(interval > largest) {
@@ -90,8 +109,6 @@ module.exports = {
 	args: true,
 	validNotes: true,
 	execute(message, args) {
-		let output = pitchClassSet(message, args);	
-		console.log(output);
-		return output;
+		return pitchClassSet(message, args);	
 	}
 }

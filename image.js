@@ -9,7 +9,7 @@ module.exports = async args => {
 	ctx.drawImage(trebleClef, 0, 0, 85, 170);
 	
 	for(let i = 0; i < args.length; i++) {
-		let note = await Canvas.loadImage(`./images/${args[i].toString()}.png`)
+		let note = await Canvas.loadImage(`./images/${args[i].number.toString()}.png`)
 		ctx.drawImage(note, 80*i + 85, 0, 80, 170);
 	}
 	

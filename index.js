@@ -3,6 +3,7 @@ const fs = require('fs');
 const Discord = require('discord.js')
 const client = new Discord.Client();
 const noteUtils = require("./notes.js");
+const UserException = require("./exception.js");
 
 client.commands = new Discord.Collection();
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
@@ -33,11 +34,6 @@ client.on('message', message => {
 	}
 });
 
-function UserException(message) {
-	this.message = message;
-	this.name = "UserException";
-}
-
 function handleMessage(message) {
 	if(!message.content.startsWith(prefix) || message.author.bot) return ["", message.content];
 
@@ -52,7 +48,7 @@ function handleMessage(message) {
 	args = evaluateArgs(message, args);
 
 	if(command.args && args.length === 0) {
-		let reply = "Need to give me notes!";
+		let reply = "Need to give me stuff!";
 
 		if(command.usage) {
 			reply += `\nUsage: \`${prefix}${command.name} ${command.usage}\`` 
@@ -77,16 +73,29 @@ function handleMessage(message) {
 
 function evaluateArgs(message, args) {
 	if(args.every(arg => arg === "")) return [];
+
+	let newArgs = [];
+
+	let addArg = (arg) => {
+		if(Array.isArray(arg)) {
+			newArgs = newArgs.concat(arg);
+		}
+		else {
+			newArgs.push(arg);
+		}
+	}
 	
-	let text = "";
 	for(let i = 0; i < args.length; i++) {
 		let arg = args[i];
 		if(arg.includes("!")) {
 			if(arg.charAt(0) === "!") {
 				let newContent = args.slice(i).join(" ");
 				message.content = newContent;
-				response = handleMessage(message);
-				text += " " + response[1];
+				let response = handleMessage(message);
+				if(response === undefined) {
+					throw new UserException(`Invalid command: \`${arg}\``)
+				}
+				addArg(response[1])
 				break;
 			}
 			else if(arg.charAt(0) === "(") {
@@ -109,16 +118,19 @@ function evaluateArgs(message, args) {
 
 				let newContent = args.slice(i, endIndex+1).join(" ");
 				message.content = newContent;
-				response = handleMessage(message);
-				text += " " + response[1];
+				let response = handleMessage(message);
+				if(response === undefined) {
+					throw new UserException(`Invalid command: \`${arg}\``)
+				}
+				addArg(response[1])
 				i = endIndex;
 			}
 		}
 		else {
-			text += " " + arg;
+			addArg(arg)
 		}
 	}
-	return text.trim().split(/ +/);
+	return newArgs;
 }
 
 client.login(token)

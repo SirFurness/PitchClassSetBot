@@ -7,8 +7,22 @@ const notes = [
 exports.toNote = function (number) {
 	return notes[number];
 }
+
+exports.getOctave = function(note) {
+	if(isNaN(note.charAt(note.length-1))) {
+		return 4;
+	}
+	else {
+		return Number(note.charAt(note.length-1))
+	}
+}
+
 exports.toNumber = function (note) {
 	return notes.indexOf(note);
+}
+
+exports.mod12 = function(num) {
+	return (num%12+12)%12;
 }
 
 exports.intervalsToNumbers = function (intervals) {
@@ -16,7 +30,15 @@ exports.intervalsToNumbers = function (intervals) {
 	for(let i = 1; i < intervals.length; i++) {
 		numbers.push(numbers[i-1]+intervals[i])
 	}
-	return numbers.map(num => (num%12+12)%12)
+	return numbers.map(num => exports.mod12(num))
+}
+
+exports.numbersToIntervals = function (numbers) {
+	let output = []
+	for(let i = 1; i < numbers.length; i++) {
+		output[i-1] = exports.mod12(numbers[i] - numbers[i-1])
+	}
+	return output;
 }
 
 exports.intervalBetween = function (a, b) {
@@ -27,17 +49,16 @@ exports.intervalBetween = function (a, b) {
 	return interval;
 }
 
-exports.removeDuplicates = function (notes) {
-	return [...new Set(notes)];
+exports.removeDuplicates = function(notes) {
+	return notes.filter((item, index, arr) =>
+		index===arr.findIndex(elem => elem.standardName === item.standardName));
 }
 
 exports.isValidNote = function (note) {
-	firstCharValid = validNotes.includes(note.charAt(0).toUpperCase());
-	restOfChar = note.slice(1);
+	if(typeof(note) === "object" && note.constructor.name === "Note") return true;
 
-	let restOfCharValid = /^[#b]*$/.test(restOfChar);
-
-	return firstCharValid && restOfCharValid;
+	//a single [A-g], one or more [#b], 0 or 1 \d
+	return /^[A-g][#b]*\d{0,1}$/.test(note);
 }
 
 exports.signedIntervalBetween = function (a, b) {
