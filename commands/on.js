@@ -2,15 +2,16 @@ const noteUtils = require("../notes.js");
 const Note = require("../note.js");
 
 function startOn(message, args) {
+	console.log("here")
 	let notes = args.map(arg => new Note(arg));
 	let startNote = notes.shift();
-	let shiftAmt = startNote.number - notes[0].number;
+	let shiftAmt = Note.halfstepsBetween(notes[0], startNote)
 	
+	console.log(`shiftAmt: ${shiftAmt}`)
 	notes.forEach(note => note.shift(shiftAmt))
+	console.log(notes)
 	
-	let octave = notes[0].octave;
-	notes[0] = new Note(startNote.actualName);	
-	notes[0].octave = octave;
+	notes[0] = startNote;
 	
 	let output = notes.map(note => note.actualName).join(" ");
 	return [output, notes]

@@ -29,6 +29,7 @@ function pitchClassSet(message, args) {
 	let bno = noSum < roSum ? normalOrder : retrogradeOrder;
 	let notes = bno.map(num => new Note(num));	
 	notes.map(note => note.shift(inputNotes[0].number))
+	notes[0] = inputNotes[0]
 	
 	if(noSum < roSum) {
 		return [displayBNO(normalOrder), notes];

@@ -25,6 +25,44 @@ exports.mod12 = function(num) {
 	return (num%12+12)%12;
 }
 
+exports.noteDistanceNoAccidentals = function(a, b) {
+	/*let scale = a.isAbove(b) ? -1 : 1;
+
+	console.log(`scale: ${scale}`)
+	console.log("a:")
+	console.log(a);
+	console.log("b:")
+	console.log(b)
+
+	let octaves = Math.max(0, Math.abs(b.octave - a.octave)-1);
+
+	let start = Math.min(a.number, b.number)
+	let end = Math.max(b.number, a.number)
+
+	console.log(`start: ${start}, end: ${end}`)
+
+	let dist = 0;
+	for(let i = start+1; i <= end; i++) {
+		if(notes[i].length === 2) {
+			continue;
+		}
+		else {
+			dist += 1;
+		}
+	}
+
+	if(a.number < b.number && scale === -1 ||
+	   b.number < a.number && scale === 1  || 
+	   (a.number === b.number && a.octave !== b.octave)) {
+		dist = 7-dist	
+	}
+
+	console.log(`dist: ${dist}`)
+	console.log(`total: ${scale*(dist+7*octaves)}`)
+
+	return scale*(dist+7*octaves);*/
+}
+
 exports.intervalsToNumbers = function (intervals) {
 	let numbers = [intervals[0]]
 	for(let i = 1; i < intervals.length; i++) {
