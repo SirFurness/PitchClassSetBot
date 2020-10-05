@@ -13,7 +13,7 @@ module.exports = async args => {
 	let heights = args.map(note => calculateHeight(note))
 	let top = Math.min(...heights.map(height => height.top));
 	let bot = Math.max(...heights.map(height => height.bot));
-	bot += 10
+	bot += 30
 	
 	if(top < 0) {
 		height += -top;
@@ -36,16 +36,7 @@ module.exports = async args => {
 	for([i, height] of heights.entries()) {
 		let xPos = 100 + 80*i
 		createNote(ctx, noteParts, staffTop, xPos, args[i], height);
-		//ctx.drawImage(down, 100+(80)*i, height.top+staffTop, 85/2, 170/2);
 	}
-	////ctx.drawImage(flat, 85, 0, 30, 60);
-	//ctx.drawImage(ledger, 115, staffTop+31+9.5*(6+4), 38, 5)
-	//ctx.drawImage(down, 115, staffTop+9.5*6, 85/2, 170/2);
-	
-	//for(let i = 0; i < args.length; i++) {
-	//	let note = Canvas.loadImage(`./images/${args[i].number.toString()}.png`)
-	//	ctx.drawImage(note, 80*i + 85, 0, 80, 170);
-	//}
 	
 	let attachment = new MessageAttachment(canvas.toBuffer(), 'notes.png');
 	return attachment;
