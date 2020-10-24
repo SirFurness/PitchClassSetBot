@@ -24,7 +24,6 @@ module.exports = {
 	usage: "<note> <pitch class set>",
 	example: "Eb 0 2 4 5",
 	args: true,
-	validNotes: true,
 	execute(message, args) {
 		return startOn(message, args);	
 	}
