@@ -1,4 +1,5 @@
 # PitchClassSetBot
 Discord bot that calculates the best normal order for a pitch class set.
 
-![Example Image](https://i.ibb.co/x7dk2hG/Pitch-Class-Set-Bot.png)
+A video showing example usage:
+[![Example video](https://i.ibb.co/r3613BB/PCS-Bot-Thumbnail.png)](https://youtu.be/qD6NaQDQmck)
